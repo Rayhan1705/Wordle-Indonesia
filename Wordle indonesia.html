@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tebak Kata – Wordle Indonesia</title>
+
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&display=swap">
+
+<style>
+:root{
+  --bg:#E7EBF4;
+  --surface:#F5F7FB;
+  --ink:#16223F;
+  --muted:#59657F;
+  --line:#AEB8CE;
+  --key:#C1CADC;
+
+  --ok:#2E9E6B;
+  --pres:#D59A22;
+  --abs:#677188;
+
+  --on:#FFFFFF;
+  --pres-text:#211A0B;
+
+  --shadow:0 12px 30px rgba(22,34,63,.08);
+  --tile-shadow:0 3px 10px rgba(22,34,63,.06);
+
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+
+  background:var(--bg);
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111A33;
+    --surface:#192443;
+    --ink:#EAF0FF;
+    --muted:#98A4C4;
+    --line:#34426B;
+    --key:#2A3860;
+
+    --ok:#2E9E6B;
+    --pres:#D9992A;
+    --abs:#3D4868;
+
+    --on:#FFFFFF;
+    --pres-text:#211A0B;
+
+    --shadow:0 14px 34px rgba(0,0,0,.25);
+    --tile-shadow:0 4px 12px rgba(0,0,0,.18);
+  }
+}
+
+:root[data-theme="dark"]{
+  --bg:#111A33;
+  --surface:#192443;
+  --ink:#EAF0FF;
+  --muted:#98A4C4;
+  --line:#34426B;
+  --key:#2A3860;
+
+  --ok:#2E9E6B;
+  --pres:#D9992A;
+  --abs:#3D4868;
+
+  --on:#FFFFFF;
+  --pres-text:#211A0B;
+
+  --shadow:0 14px 34px rgba(0,0,0,.25);
+  --tile-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+
+html{
+  scroll-padding-top:env(safe-area-inset-top,0px);
+}
+
+html,
+body{
+  margin:0;
+  min-height:100%;
+}
+
+body{
+  background:var(--bg);
+  color:var(--ink);
+
+  font-family:
+    "Bricolage Grotesque",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+[hidden]{
+  display:none!important;
+}
+
+button{
+  -webkit-tap-highlight-color:transparent;
+}
+
+:focus-visible{
+  outline:3px solid var(--pres);
+  outline-offset:3px;
+}
+
+/* =========================
+   APP
+   ========================= */
+
+.app{
+  position:relative;
+  z-index:1;
+
+  width:100%;
+  max-width:430px;
+  min-height:100vh;
+
+  margin:0 auto;
+
+  padding:
+    22px
+    12px
+    calc(18px + env(safe-area-inset-bottom,0px));
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+
+  box-sizing:border-box;
+}
+
+/* =========================
+   BACKGROUND DECORATION
+   ========================= */
+
+.app::before,
+.app::after{
+  content:"";
+
+  position:fixed;
+  z-index:-1;
+  pointer-events:none;
+
+  width:180px;
+  height:180px;
+
+  border-radius:50%;
+
+  filter:blur(3px);
+  opacity:.22;
+}
+
+.app::before{
+  top:80px;
+  left:calc(50% - 300px);
+
+  background:rgba(46,158,107,.16);
+}
+
+.app::after{
+  bottom:100px;
+  right:calc(50% - 300px);
+
+  background:rgba(213,154,34,.13);
+}
+
+/* =========================
+   HEADER
+   ========================= */
+
+h1{
+  margin:0;
+
+  font-size:clamp(2rem,8vw,2.35rem);
+  line-height:1;
+
+  font-weight:800;
+  letter-spacing:-.045em;
+
+  text-align:center;
+}
+
+.sub{
+  margin:2px 0 0;
+
+  color:var(--muted);
+
+  font-size:.95rem;
+  font-weight:500;
+  line-height:1.4;
+
+  text-align:center;
+}
+
+/* =========================
+   LEGEND
+   ========================= */
+
+.legend{
+  display:flex;
+
+  gap:8px 14px;
+
+  max-width:390px;
+
+  margin-top:3px;
+
+  flex-wrap:wrap;
+  justify-content:center;
+
+  font-size:.78rem;
+  font-weight:600;
+
+  color:var(--muted);
+}
+
+.legend span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+
+  white-space:nowrap;
+}
+
+.legend i{
+  width:13px;
+  height:13px;
+
+  border-radius:4px;
+
+  display:inline-block;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.15),
+    0 2px 5px rgba(0,0,0,.08);
+}
+
+/* =========================
+   MESSAGE
+   ========================= */
+
+#msg{
+  min-height:1.65em;
+
+  width:100%;
+
+  margin:1px 0 0;
+
+  font-size:.91rem;
+  font-weight:700;
+  line-height:1.4;
+
+  color:var(--ink);
+
+  text-align:center;
+}
+
+/* =========================
+   BOARD
+   ========================= */
+
+#board{
+  display:grid;
+  gap:7px;
+
+  width:min(350px,88vw);
+
+  margin-top:1px;
+}
+
+.row{
+  display:grid;
+
+  grid-template-columns:repeat(5,1fr);
+
+  gap:7px;
+
+  transform:translateX(0);
+}
+
+.row.shake{
+  animation:
+    shake .42s
+    cubic-bezier(.36,.07,.19,.97);
+}
+
+/* =========================
+   TILE
+   ========================= */
+
+.tile{
+  aspect-ratio:1;
+
+  display:grid;
+  place-items:center;
+
+  border:2px solid var(--line);
+
+  border-radius:9px;
+
+  background:rgba(245,247,251,.55);
+
+  color:var(--ink);
+
+  font-size:clamp(1.55rem,8vw,2.12rem);
+
+  font-weight:800;
+  line-height:1;
+
+  text-transform:uppercase;
+  user-select:none;
+
+  box-shadow:var(--tile-shadow);
+
+  transition:
+    border-color .15s ease,
+    background-color .2s ease,
+    color .2s ease,
+    transform .12s ease,
+    box-shadow .2s ease;
+}
+
+@media (prefers-color-scheme: dark){
+  .tile{
+    background:rgba(25,36,67,.55);
+  }
+}
+
+.tile.filled{
+  border-color:var(--muted);
+
+  box-shadow:
+    0 4px 12px rgba(22,34,63,.09),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+.tile.pop{
+  animation:
+    pop .13s
+    cubic-bezier(.2,.8,.2,1);
+}
+
+.tile.flip{
+  animation:
+    flip .52s ease both;
+}
+
+/* =========================
+   STATUS TILE
+   ========================= */
+
+.tile[data-state]{
+  border-color:transparent;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.10),
+    inset 0 0 0 1px rgba(255,255,255,.08);
+}
+
+.tile[data-state="correct"]{
+  background:var(--ok);
+  color:var(--on);
+}
+
+.tile[data-state="present"]{
+  background:var(--pres);
+  color:var(--pres-text);
+}
+
+.tile[data-state="absent"]{
+  background:var(--abs);
+  color:var(--on);
+}
+
+/* =========================
+   AGAIN BUTTON
+   ========================= */
+
+#again{
+  margin-top:3px;
+
+  padding:11px 24px;
+
+  border:0;
+  border-radius:9px;
+
+  background:var(--ink);
+  color:var(--bg);
+
+  font:
+    700 1rem
+    "Bricolage Grotesque",
+    system-ui,
+    sans-serif;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 7px 16px rgba(22,34,63,.15);
+
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    opacity .15s ease;
+}
+
+#again:hover{
+  transform:translateY(-2px);
+
+  box-shadow:
+    0 10px 20px rgba(22,34,63,.19);
+}
+
+#again:active{
+  transform:translateY(0) scale(.98);
+
+  box-shadow:
+    0 4px 10px rgba(22,34,63,.12);
+}
+
+/* =========================
+   KEYBOARD
+   ========================= */
+
+#kb{
+  width:100%;
+
+  margin-top:auto;
+
+  padding-top:13px;
+
+  display:grid;
+  gap:7px;
+}
+
+.krow{
+  display:flex;
+
+  gap:5px;
+
+  justify-content:center;
+}
+
+.key{
+  flex:1;
+  min-width:0;
+
+  height:51px;
+
+  border:1px solid rgba(22,34,63,.06);
+
+  border-radius:8px;
+
+  background:var(--key);
+  color:var(--ink);
+
+  font-family:inherit;
+  font-size:.94rem;
+  font-weight:700;
+
+  text-transform:uppercase;
+
+  cursor:pointer;
+
+  padding:0;
+
+  box-shadow:
+    0 3px 0 rgba(22,34,63,.08),
+    0 5px 10px rgba(22,34,63,.05);
+
+  transition:
+    transform .1s ease,
+    background-color .15s ease,
+    color .15s ease,
+    box-shadow .1s ease,
+    filter .15s ease;
+}
+
+.key:hover{
+  filter:brightness(1.04);
+
+  transform:translateY(-1px);
+}
+
+.key:active{
+  transform:translateY(2px);
+
+  box-shadow:
+    0 1px 0 rgba(22,34,63,.08),
+    0 2px 5px rgba(22,34,63,.04);
+}
+
+.key.wide{
+  flex:1.6;
+
+  font-size:.72rem;
+  letter-spacing:.01em;
+}
+
+/* =========================
+   KEY STATUS
+   ========================= */
+
+.key[data-state]{
+  border-color:transparent;
+}
+
+.key[data-state="correct"]{
+  background:var(--ok);
+  color:var(--on);
+}
+
+.key[data-state="present"]{
+  background:var(--pres);
+  color:var(--pres-text);
+}
+
+.key[data-state="absent"]{
+  background:var(--abs);
+  color:var(--on);
+}
+
+/* =========================
+   ANIMATIONS
+   ========================= */
+
+@keyframes pop{
+  50%{
+    transform:scale(1.08);
+  }
+}
+
+@keyframes flip{
+
+  0%{
+    transform:rotateX(0);
+  }
+
+  50%{
+    transform:rotateX(90deg);
+  }
+
+  100%{
+    transform:rotateX(0);
+  }
+}
+
+@keyframes shake{
+
+  20%,60%{
+    transform:translateX(-6px);
+  }
+
+  40%,80%{
+    transform:translateX(6px);
+  }
+}
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width:380px){
+
+  .app{
+    padding-left:9px;
+    padding-right:9px;
+  }
+
+  #board{
+    width:min(320px,88vw);
+  }
+
+  .key{
+    height:47px;
+    font-size:.87rem;
+  }
+
+  .key.wide{
+    font-size:.67rem;
+  }
+
+  .legend{
+    gap:7px 10px;
+    font-size:.74rem;
+  }
+}
+
+/* =========================
+   SHORT SCREEN
+   ========================= */
+
+@media (max-height:720px){
+
+  .app{
+    gap:7px;
+    padding-top:14px;
+  }
+
+  #board{
+    width:min(325px,82vw);
+  }
+
+  #kb{
+    padding-top:8px;
+  }
+
+  .key{
+    height:45px;
+  }
+}
+
+/* =========================
+   REDUCED MOTION
+   ========================= */
+
+@media (prefers-reduced-motion:reduce){
+
+  *,
+  *::before,
+  *::after{
+    scroll-behavior:auto!important;
+  }
+
+  .tile.flip,
+  .tile.pop,
+  .row.shake{
+    animation:none!important;
+  }
+
+  .key,
+  #again,
+  .tile{
+    transition:none!important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <h1>Tebak kata</h1>
+
+  <p class="sub">
+    Tebak kata 5 huruf dalam 6 kesempatan.
+  </p>
+
+  <div class="legend">
+
+    <span>
+      <i style="background:var(--ok)"></i>
+      Huruf dan posisi tepat
+    </span>
+
+    <span>
+      <i style="background:var(--pres)"></i>
+      Huruf ada, posisi salah
+    </span>
+
+    <span>
+      <i style="background:var(--abs)"></i>
+      Tidak ada
+    </span>
+
+  </div>
+
+  <p
+    id="msg"
+    role="status"
+    aria-live="polite">
+  </p>
+
+  <div
+    id="board"
+    aria-label="Papan tebakan">
+  </div>
+
+  <button
+    id="again"
+    hidden
+    type="button">
+    Main lagi
+  </button>
+
+  <div id="kb"></div>
+
+</main>
+
+<script>
+
+/* =========================================================
+   DAFTAR KATA
+   ========================================================= */
+
+const WORDS = `
+abadi acara agama ajaib angin angka arang bahan bakso
+balon bantu barat batas batik bebek becak bekal belut
+benda benci besar bibir bilik bisik bocah bodoh buaya
+bumbu bunga bunyi buruh busuk cabai candi cerah cinta
+coret cukup curam dahan dalam damai dapur darah datar
+debar dekat dunia duduk gadis gagah gajah galak garam
+garpu gelas gelap gemuk genap gigih gigit gubuk gulai
+gurih hadir halus harga hujan hutan impor indah insan
+jalan jambu janji jarak jeruk joget jujur kabar kabel
+kaget kakak kamar kapal karet kasar kasur kebun kelas
+kemas kerja kesal kirim kotak kuali kunci kursi lahir
+laris layar lemah lemak letak lidah lilin lirik luhur
+lukis lurus makna malam malas mandi manis marah masak
+mesin mimpi minum mobil motor muram murid musim nakal
+nanti nasib nyala nyata objek organ padat pagar pahit
+paksa paman panas pasar pasir pecah pedas pelan penuh
+perut pesan pikir pisau pohon pulau pucat pukul puisi
+pusat putih racun radio rakit ramai rapat rawan resah
+rindu robek rokok rumah rumit rusak sabar sabun sakit
+salah salju sawah sedih segar sehat sejuk selat semut
+sepak serat siang sikat sisir sopan subuh sudut sulit
+sumur surat susah sutra tabah tahan tahun takut tamat
+tanah tanda tebal tegas teman tempe tenda tepat tikus
+timur tinta tokoh tulis tunai tutup udara ujian ulang
+untuk upaya utara wajah waktu warga warna yakin zaman
+`;
+
+const POOL = [
+  ...new Set(
+    WORDS
+      .split(/\s+/)
+      .filter(word => /^[a-z]{5}$/.test(word))
+  )
+];
+
+const MAX = 6;
+const LEN = 5;
+
+const PRAISE = [
+  "Luar biasa!",
+  "Hebat!",
+  "Mantap!",
+  "Bagus!",
+  "Lumayan!",
+  "Hampir saja!"
+];
+
+const RANK = {
+  absent:1,
+  present:2,
+  correct:3
+};
+
+const reduce =
+  matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* =========================================================
+   ELEMENT
+   ========================================================= */
+
+const boardEl =
+  document.getElementById("board");
+
+const kbEl =
+  document.getElementById("kb");
+
+const msgEl =
+  document.getElementById("msg");
+
+const againBtn =
+  document.getElementById("again");
+
+const keyEls = {};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+let rows = [];
+let answer = "";
+let guesses = [];
+let cur = "";
+let over = false;
+let busy = false;
+
+/* =========================================================
+   BUILD KEYBOARD
+   ========================================================= */
+
+function buildKeyboard(){
+
+  const keyboardRows = [
+    "qwertyuiop",
+    "asdfghjkl",
+    "+zxcvbnm-"
+  ];
+
+  keyboardRows.forEach(line => {
+
+    const row =
+      document.createElement("div");
+
+    row.className = "krow";
+
+    for(const ch of line){
+
+      const button =
+        document.createElement("button");
+
+      button.className = "key";
+
+      button.type = "button";
+
+      if(ch === "+"){
+
+        button.textContent = "Kirim";
+
+        button.classList.add("wide");
+
+        button.dataset.k = "enter";
+
+        button.setAttribute(
+          "aria-label",
+          "Kirim tebakan"
+        );
+
+      }
+
+      else if(ch === "-"){
+
+        button.textContent = "Hapus";
+
+        button.classList.add("wide");
+
+        button.dataset.k = "del";
+
+        button.setAttribute(
+          "aria-label",
+          "Hapus huruf"
+        );
+
+      }
+
+      else{
+
+        button.textContent = ch;
+
+        button.dataset.k = ch;
+
+        button.setAttribute(
+          "aria-label",
+          `Huruf ${ch.toUpperCase()}`
+        );
+
+        keyEls[ch] = button;
+      }
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          press(button.dataset.k);
+
+          button.blur();
+        }
+      );
+
+      row.appendChild(button);
+    }
+
+    kbEl.appendChild(row);
+  });
+}
+
+/* =========================================================
+   NEW GAME
+   ========================================================= */
+
+function newGame(){
+
+  answer =
+    POOL[
+      Math.floor(
+        Math.random() * POOL.length
+      )
+    ];
+
+  guesses = [];
+  cur = "";
+  over = false;
+  busy = false;
+
+  boardEl.innerHTML = "";
+
+  rows = [];
+
+  for(let r = 0; r < MAX; r++){
+
+    const row =
+      document.createElement("div");
+
+    row.className = "row";
+
+    const tiles = [];
+
+    for(let c = 0; c < LEN; c++){
+
+      const tile =
+        document.createElement("div");
+
+      tile.className = "tile";
+
+      tile.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+
+      row.appendChild(tile);
+
+      tiles.push(tile);
+    }
+
+    boardEl.appendChild(row);
+
+    rows.push({
+      row,
+      tiles
+    });
+  }
+
+  Object.values(keyEls)
+    .forEach(key => {
+      key.removeAttribute("data-state");
+    });
+
+  againBtn.hidden = true;
+
+  say("");
+}
+
+/* =========================================================
+   MESSAGE
+   ========================================================= */
+
+function say(text){
+
+  msgEl.textContent = text;
+}
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+function press(k){
+
+  if(over || busy){
+    return;
+  }
+
+  if(k === "enter"){
+    return submit();
+  }
+
+  if(k === "del"){
+
+    cur =
+      cur.slice(0,-1);
+
+    paint(false);
+
+    return;
+  }
+
+  if(cur.length < LEN){
+
+    cur += k;
+
+    paint(true);
+  }
+}
+
+/* =========================================================
+   PAINT
+   ========================================================= */
+
+function paint(grew){
+
+  const currentRow =
+    rows[guesses.length];
+
+  if(!currentRow){
+    return;
+  }
+
+  const { tiles } = currentRow;
+
+  tiles.forEach((tile,index) => {
+
+    const letter =
+      cur[index] || "";
+
+    tile.textContent =
+      letter;
+
+    tile.classList.toggle(
+      "filled",
+      Boolean(letter)
+    );
+
+    tile.classList.remove(
+      "pop"
+    );
+  });
+
+  if(grew && cur.length > 0){
+
+    const tile =
+      tiles[cur.length - 1];
+
+    if(tile){
+
+      void tile.offsetWidth;
+
+      tile.classList.add("pop");
+    }
+  }
+
+  say("");
+}
+
+/* =========================================================
+   SCORE
+   ========================================================= */
+
+function score(g,a){
+
+  const result =
+    Array(LEN).fill("absent");
+
+  const left = {};
+
+  for(let i = 0; i < LEN; i++){
+
+    if(g[i] === a[i]){
+
+      result[i] =
+        "correct";
+
+    }else{
+
+      left[a[i]] =
+        (left[a[i]] || 0) + 1;
+    }
+  }
+
+  for(let i = 0; i < LEN; i++){
+
+    if(result[i] === "correct"){
+      continue;
+    }
+
+    if(left[g[i]] > 0){
+
+      result[i] =
+        "present";
+
+      left[g[i]]--;
+    }
+  }
+
+  return result;
+}
+
+/* =========================================================
+   MARK KEY
+   ========================================================= */
+
+function markKey(letter,state){
+
+  const key =
+    keyEls[letter];
+
+  if(!key){
+    return;
+  }
+
+  const old =
+    key.dataset.state;
+
+  if(
+    !old ||
+    RANK[state] > RANK[old]
+  ){
+
+    key.dataset.state =
+      state;
+  }
+}
+
+/* =========================================================
+   SUBMIT
+   ========================================================= */
+
+function submit(){
+
+  const currentRow =
+    rows[guesses.length];
+
+  if(!currentRow){
+    return;
+  }
+
+  const { row, tiles } =
+    currentRow;
+
+  if(cur.length < LEN){
+
+    row.classList.remove(
+      "shake"
+    );
+
+    void row.offsetWidth;
+
+    row.classList.add(
+      "shake"
+    );
+
+    say(
+      "Kurang huruf. Isi 5 huruf dulu."
+    );
+
+    return;
+  }
+
+  const guess = cur;
+
+  const result =
+    score(
+      guess,
+      answer
+    );
+
+  busy = true;
+
+  const step =
+    reduce ? 0 : 260;
+
+  result.forEach(
+    (state,index) => {
+
+      setTimeout(() => {
+
+        if(!reduce){
+
+          tiles[index]
+            .classList
+            .add("flip");
+        }
+
+        setTimeout(() => {
+
+          tiles[index]
+            .dataset
+            .state = state;
+
+          markKey(
+            guess[index],
+            state
+          );
+
+        }, reduce ? 0 : 250);
+
+      }, index * step);
+    }
+  );
+
+  setTimeout(() => {
+
+    guesses.push(guess);
+
+    cur = "";
+
+    if(guess === answer){
+
+      over = true;
+
+      say(
+        `${PRAISE[guesses.length - 1]} ` +
+        `Ketemu dalam ` +
+        `${guesses.length} tebakan.`
+      );
+    }
+
+    else if(
+      guesses.length === MAX
+    ){
+
+      over = true;
+
+      say(
+        `Kesempatan habis. Katanya: ` +
+        `${answer.toUpperCase()}`
+      );
+    }
+
+    busy = false;
+
+    if(over){
+
+      againBtn.hidden = false;
+
+      againBtn.focus();
+    }
+
+  },
+  (LEN - 1) * step +
+  (reduce ? 10 : 520));
+}
+
+/* =========================================================
+   PHYSICAL KEYBOARD
+   ========================================================= */
+
+addEventListener(
+  "keydown",
+  event => {
+
+    if(
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ){
+      return;
+    }
+
+    if(
+      event.target.closest &&
+      event.target.closest("button")
+    ){
+      return;
+    }
+
+    if(event.key === "Enter"){
+
+      event.preventDefault();
+
+      press("enter");
+    }
+
+    else if(
+      event.key === "Backspace"
+    ){
+
+      event.preventDefault();
+
+      press("del");
+    }
+
+    else if(
+      /^[a-zA-Z]$/.test(
+        event.key
+      )
+    ){
+
+      press(
+        event.key.toLowerCase()
+      );
+    }
+  }
+);
+
+/* =========================================================
+   MAIN LAGI
+   ========================================================= */
+
+againBtn.addEventListener(
+  "click",
+  () => {
+
+    newGame();
+
+    againBtn.blur();
+  }
+);
+
+/* =========================================================
+   START
+   ========================================================= */
+
+buildKeyboard();
+newGame();
+
+</script>
+</body>
+</html>
